@@ -58,9 +58,9 @@ RESNET_1_KERNEL_NUM = 64
 
 RESNET_2_BLOCKS = 1
 RESNET_2_KERNEL_SIZE = 1  # good start may be 3/5
-RESNET_2_KERNEL_NUM = 1
+RESNET_2_KERNEL_NUM = 3
 DILATION = [1]
-WANTED_M = 3  # len of DILATION to be randomize by 'wandb' tool
+WANTED_M = 1  # len of DILATION to be randomize by 'wandb' tool
 
 # percentage of dropout for the dropout layer
 DROPOUT = 0.0  # good start may be 0.1-0.5
@@ -122,6 +122,7 @@ def build_network(config):
     builds the neural network architecture as shown in the exercise.
     :return: a Keras Model
     """
+    dialation = [config[f"DILATION_{i}"] for i in range(WANTED_M)]
     # input, shape (NB_MAX_LENGTH,FEATURE_NUM)
     input_layer = tf.keras.Input(shape=(utils.NB_MAX_LENGTH, utils.FEATURE_NUM))
 
@@ -138,8 +139,8 @@ def build_network(config):
                                  padding="same")(resnet_layer)
 
     # second ResNet -> shape = (NB_MAX_LENGTH, RESNET_2_KERNEL_NUM)
-    resnet_layer = resnet_2(config['conv1d_layer'], config['RESNET_2_BLOCKS'], config['RESNET_2_KERNEL_SIZE'],
-                            config['RESNET_2_KERNEL_NUM'], config['DILATION'])
+    resnet_layer = resnet_2(conv1d_layer, config['RESNET_2_BLOCKS'], config['RESNET_2_KERNEL_SIZE'],
+                            config['RESNET_2_KERNEL_NUM'], dialation)
 
     dp = layers.Dropout(config['DROPOUT'])(resnet_layer)
     conv1d_layer = layers.Conv1D(config['RESNET_2_KERNEL_NUM'] // 2, config['RESNET_2_KERNEL_SIZE'],
@@ -192,12 +193,7 @@ def get_config():
 
 
 def get_default_config():
-    sweep_config = {}
-    sweep_config['method'] = 'random'
-    sweep_config['metric'] = {'name': 'loss', 'goal': 'minimize'}
-
-    sweep_config['name'] = f"BioEx4_{get_time()}"
-    param_dict = {
+    sweep_config = {
         'RESNET_1_BLOCKS': RESNET_1_BLOCKS,
         'RESNET_1_KERNEL_SIZE': RESNET_1_KERNEL_SIZE,
         'RESNET_1_KERNEL_NUM': RESNET_1_KERNEL_NUM,
@@ -209,11 +205,14 @@ def get_default_config():
         "LR": LR,
         'BATCH': BATCH
     }
+    sweep_config['method'] = 'random'
+    sweep_config['metric'] = {'name': 'loss', 'goal': 'minimize'}
+
+    sweep_config['name'] = f"BioEx4_{get_time()}"
 
     for i in range(WANTED_M):
-        param_dict[f"DILATION_{i}"] = DILATION[i]
+        sweep_config[f"DILATION_{i}"] = DILATION[i]
 
-    sweep_config['parameters'] = param_dict
     return sweep_config
 
 
@@ -223,6 +222,7 @@ def train(config=None):
     with wandb.init(config=config):
 
         # __________________________________________loading the data__________________________________________
+        config = wandb.config
         input = np.load("train_input.npy")  # numpy array of shape (1974,NB_MAX_LENGTH,FEATURE_NUM) - data
         labels = np.load("train_labels.npy")  # numpy array of shape (1974,NB_MAX_LENGTH,OUTPUT_SIZE) - labels
         save_dir = "BestFits/"
@@ -242,32 +242,48 @@ def train(config=None):
             model.compile(optimizer=my_optimizer, loss='mean_squared_error')
 
             # ________________________________________creating callbacks______________________________________
-            checkpoint = tf.keras.callbacks.ModelCheckpoint(f"{save_dir}{model_name}{fold_var}",
-                                                            monitor='val_loss',
-                                                            save_best_only=True, mode='max')
-            callbacks_list = [checkpoint]
+            # checkpoint = tf.keras.callbacks.ModelCheckpoint(f"{save_dir}"
+            #                                                 f"{model_name}"
+            #                                                 f"{fold_var}.h5",
+            #                                                 monitor='val_loss',
+            #                                                 save_best_only=True, mode='max')
+            # callbacks_list = [checkpoint]
 
             # ________________________________________fitting the model_______________________________________
             history = model.fit(X_t, y_t,
                                 epochs=config['EPOCHS'],
-                                callbacks=callbacks_list,
+                                # callbacks=callbacks_list,
                                 batch_size=config['BATCH'],
                                 validation_data=(X_v, y_v))
 
-            model.load_weights(f"{save_dir}{model_name}{fold_var}")
+            #TODO decide how we want to save model here
+
+            # load_status = model.load_weights(f"{save_dir}{model_name}"
+            #                                 f"{fold_var}.h5")
+            # load_status.assert_consumed()
             loss[fold_var - 1] = model.evaluate(X_v, y_v)
             fold_var += 1
             tf.keras.backend.clear_session()
 
-            print(np.mean(loss))
-            print(np.std(loss))
+        wandb.log({'loss':np.mean(loss),"std":np.std(loss)})
 
 
 def main():
-    sweep_id = wandb.sweep(get_config(), project="BioEx4",
-                           entity="avishai-elma")
-    wandb.agent(sweep_id, train, count=1000)
+    # sweep_id = wandb.sweep(get_config(), project="BioEx4",
+    #                        entity="avishai-elma")
+    # wandb.agent(sweep_id, train, count=1)
+    train()
 
 
 if __name__ == '__main__':
-    main()
+    train()
+    # input_layer = tf.keras.Input(shape=(utils.NB_MAX_LENGTH, utils.FEATURE_NUM))
+    #
+    # # Conv1D -> shape = (NB_MAX_LENGTH, RESNET_1_KERNEL_NUM)
+    # conv1d_layer = layers.Conv1D(config['RESNET_1_KERNEL_NUM'], config['RESNET_1_KERNEL_SIZE'],
+    #                              padding='same')(input_layer)
+    # dense = layers.Dense(15)(conv1d_layer)
+    #
+    # model = tf.model(input_layer,dense)
+    # my_optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+
