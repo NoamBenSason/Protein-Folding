@@ -242,26 +242,26 @@ def train(config=None):
             model.compile(optimizer=my_optimizer, loss='mean_squared_error')
 
             # ________________________________________creating callbacks______________________________________
-            # checkpoint = tf.keras.callbacks.ModelCheckpoint(f"{save_dir}"
-            #                                                 f"{model_name}"
-            #                                                 f"{fold_var}.h5",
-            #                                                 monitor='val_loss',
-            #                                                 save_best_only=True, mode='max')
-            # callbacks_list = [checkpoint]
+            checkpoint = tf.keras.callbacks.ModelCheckpoint(f"{save_dir}"
+                                                            f"{model_name}"
+                                                            f"{fold_var}.ckpt",
+                                                            monitor='val_loss',
+                                                            save_best_only=True, mode='max')
+            callbacks_list = [checkpoint]
 
             # ________________________________________fitting the model_______________________________________
             history = model.fit(X_t, y_t,
                                 epochs=config['EPOCHS'],
-                                # callbacks=callbacks_list,
+                                callbacks=callbacks_list,
                                 batch_size=config['BATCH'],
                                 validation_data=(X_v, y_v))
 
             #TODO decide how we want to save model here
 
-            # load_status = model.load_weights(f"{save_dir}{model_name}"
-            #                                 f"{fold_var}.h5")
-            # load_status.assert_consumed()
-            loss[fold_var - 1] = model.evaluate(X_v, y_v)
+            best_model = tf.keras.models.load_model(f"{save_dir}"
+                                                    f"{model_name}"
+                                                    f"{fold_var}.ckpt")
+            loss[fold_var - 1] = best_model.evaluate(X_v, y_v)
             fold_var += 1
             tf.keras.backend.clear_session()
 
