@@ -220,7 +220,6 @@ def train(config=None):
 
         # __________________________________________loading the data__________________________________________
         config = wandb.config
-        print(config)
         input = np.load("train_input.npy")  # numpy array of shape (1974,NB_MAX_LENGTH,FEATURE_NUM) - data
         labels = np.load("train_labels.npy")  # numpy array of shape (1974,NB_MAX_LENGTH,OUTPUT_SIZE) - labels
         save_dir = "BestFits/"
@@ -249,20 +248,17 @@ def train(config=None):
             callbacks_list = [checkpoint,WandbCallback(fold_var)]
 
             # ________________________________________fitting the model_______________________________________
-            print("Fit")
             history = model.fit(X_t, y_t,
                                 epochs=config['EPOCHS'],
                                 callbacks=callbacks_list,
                                 batch_size=config['BATCH'],
                                 validation_data=(X_v, y_v))
 
-            print("eval")
             # ________________________________________evaluate the model______________________________________
             best_model = tf.keras.models.load_model(f"{save_dir}"
                                                     f"{model_name}"
                                                     f"{fold_var}.ckpt")
             loss[fold_var - 1] = best_model.evaluate(X_v, y_v)
-            print(loss[fold_var - 1])
             fold_var += 1
             tf.keras.backend.clear_session()
 
