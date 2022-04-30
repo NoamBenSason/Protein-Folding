@@ -227,11 +227,11 @@ def train(config=None):
         save_dir = "BestFits/"
         model_name = run.name
         fold_var = 1
-        kf = KFold(n_splits=5)
+        kf = KFold(n_splits=5,shuffle=True,random_state=0)
         my_optimizer = tf.keras.optimizers.Adam(learning_rate=config['LR'])
         loss = np.zeros(5)
 
-        for t_idx, v_idx in kf.split(input, labels,shuffle=True,random_state=0):
+        for t_idx, v_idx in kf.split(input, labels):
             X_t, X_v = input[t_idx], input[v_idx]
             y_t, y_v = labels[t_idx], labels[v_idx]
 
