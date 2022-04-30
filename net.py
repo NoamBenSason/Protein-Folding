@@ -43,9 +43,9 @@ import utils
 
 
 # number of ResNet blocks for the first ResNet and the kernel size.
-RESNET_1_BLOCKS = 3
-RESNET_1_KERNEL_SIZE = 15
-RESNET_1_KERNEL_NUM = 64
+RESNET_1_BLOCKS = 1
+RESNET_1_KERNEL_SIZE = 1
+RESNET_1_KERNEL_NUM = 39
 
 ###############################################################################
 #                                                                             #
@@ -57,17 +57,17 @@ RESNET_1_KERNEL_NUM = 64
 # number of ResNet blocks for the second ResNet, dilation list to repeat and the kernel size.
 
 RESNET_2_BLOCKS = 1
-RESNET_2_KERNEL_SIZE = 1  # good start may be 3/5
-RESNET_2_KERNEL_NUM = 3  # DO NOT MAKE IT 1!
+RESNET_2_KERNEL_SIZE = 2  # good start may be 3/5
+RESNET_2_KERNEL_NUM = 31  # DO NOT MAKE IT 1!
 DILATION = [1]
 WANTED_M = len(DILATION) # len of DILATION to be randomize by 'wandb' tool
 
 # percentage of dropout for the dropout layer
-DROPOUT = 0.0  # good start may be 0.1-0.5
+DROPOUT = 0.46363  # good start may be 0.1-0.5
 
 # number of epochs, Learning rate and Batch size
-EPOCHS = 3
-LR = 0.001  # good start may be 0.0001/0.001/0.01
+EPOCHS = 7
+LR = 0.044244  # good start may be 0.0001/0.001/0.01
 BATCH = 128  # good start may be 32/64/128
 
 
@@ -198,8 +198,7 @@ def get_default_config():
                     'RESNET_2_KERNEL_SIZE': RESNET_2_KERNEL_SIZE,
                     'RESNET_2_KERNEL_NUM': RESNET_2_KERNEL_NUM,
                     'DROPOUT': DROPOUT, 'EPOCHS': EPOCHS, "LR": LR,
-                    'DILATATION':DILATION,
-                    'BATCH': BATCH, 'method': 'random',
+                    'DILATATION': DILATION, 'BATCH': BATCH, 'method': 'random',
                     'metric': {'name': 'loss', 'goal': 'minimize'},
                     'name': f"BioEx4_{get_time()}"}
 
@@ -244,23 +243,25 @@ def train(config=None):
                                                             f"{model_name}"
                                                             f"{fold_var}.ckpt",
                                                             monitor='val_loss',
-                                                            save_best_only=True, mode='max')
+                                                            save_best_only=True, mode='min')
 
             callbacks_list = [checkpoint,WandbCallback(fold_var)]
 
             # ________________________________________fitting the model_______________________________________
+            print("Fit")
             history = model.fit(X_t, y_t,
                                 epochs=config['EPOCHS'],
                                 callbacks=callbacks_list,
                                 batch_size=config['BATCH'],
                                 validation_data=(X_v, y_v))
 
-
+            print("eval")
             # ________________________________________evaluate the model______________________________________
             best_model = tf.keras.models.load_model(f"{save_dir}"
                                                     f"{model_name}"
                                                     f"{fold_var}.ckpt")
             loss[fold_var - 1] = best_model.evaluate(X_v, y_v)
+            print(loss[fold_var - 1])
             fold_var += 1
             tf.keras.backend.clear_session()
 
@@ -274,8 +275,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
-    # train()
+    # main()
+    train()
     # input_layer = tf.keras.Input(shape=(utils.NB_MAX_LENGTH, utils.FEATURE_NUM))
     #
     # # Conv1D -> shape = (NB_MAX_LENGTH, RESNET_1_KERNEL_NUM)
