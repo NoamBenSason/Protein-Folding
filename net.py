@@ -216,14 +216,15 @@ class WandbCallback(tf.keras.callbacks.Callback):
 def train(config=None):
     if config is None:
         config = get_default_config()
-    with wandb.init(config=config):
+    with wandb.init(config=config) as run:
 
         # __________________________________________loading the data__________________________________________
         config = wandb.config
+        print(config)
         input = np.load("train_input.npy")  # numpy array of shape (1974,NB_MAX_LENGTH,FEATURE_NUM) - data
         labels = np.load("train_labels.npy")  # numpy array of shape (1974,NB_MAX_LENGTH,OUTPUT_SIZE) - labels
         save_dir = "BestFits/"
-        model_name = "test"
+        model_name = run.name
         fold_var = 1
         kf = KFold(n_splits=5)
         my_optimizer = tf.keras.optimizers.Adam(learning_rate=config['LR'])
