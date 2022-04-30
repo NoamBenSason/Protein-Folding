@@ -60,7 +60,7 @@ RESNET_2_BLOCKS = 1
 RESNET_2_KERNEL_SIZE = 1  # good start may be 3/5
 RESNET_2_KERNEL_NUM = 3  # DO NOT MAKE IT 1!
 DILATION = [1]
-WANTED_M = 1  # len of DILATION to be randomize by 'wandb' tool
+WANTED_M = len(DILATION) # len of DILATION to be randomize by 'wandb' tool
 
 # percentage of dropout for the dropout layer
 DROPOUT = 0.0  # good start may be 0.1-0.5
@@ -122,7 +122,7 @@ def build_network(config):
     builds the neural network architecture as shown in the exercise.
     :return: a Keras Model
     """
-    dialation = [config[f"DILATION_{i}"] for i in range(WANTED_M)]
+
     # input, shape (NB_MAX_LENGTH,FEATURE_NUM)
     input_layer = tf.keras.Input(shape=(utils.NB_MAX_LENGTH, utils.FEATURE_NUM))
 
@@ -140,7 +140,7 @@ def build_network(config):
 
     # second ResNet -> shape = (NB_MAX_LENGTH, RESNET_2_KERNEL_NUM)
     resnet_layer = resnet_2(conv1d_layer, config['RESNET_2_BLOCKS'], config['RESNET_2_KERNEL_SIZE'],
-                            config['RESNET_2_KERNEL_NUM'], dialation)
+                            config['RESNET_2_KERNEL_NUM'], config['DILATATION'])
 
     dp = layers.Dropout(config['DROPOUT'])(resnet_layer)
     conv1d_layer = layers.Conv1D(config['RESNET_2_KERNEL_NUM'] // 2, config['RESNET_2_KERNEL_SIZE'],
@@ -182,39 +182,37 @@ def get_config():
         'DROPOUT': {'distribution': 'uniform', 'min': 0.001, 'max': 0.5},
         'EPOCHS': {'distribution': 'int_uniform', 'min': 2, 'max': 30},
         "LR": {'distribution': 'uniform', 'min': 0.001, 'max': 0.05},
-        'BATCH': {'values': [16, 32, 64, 128, 256]}
+        'BATCH': {'values': [16, 32, 64, 128, 256]},
+        'DILATATION':{'values':[[1,2,4],[1],[1,2],[1,4],[1,2,4,8],[2,2,2]]}
     }
-
-    for i in range(WANTED_M):
-        param_dict[f"DILATION_{i}"] = {'distribution': 'int_uniform', 'min': 1, 'max': 5}
 
     sweep_config['parameters'] = param_dict
     return sweep_config
 
 
 def get_default_config():
-    sweep_config = {
-        'RESNET_1_BLOCKS': RESNET_1_BLOCKS,
-        'RESNET_1_KERNEL_SIZE': RESNET_1_KERNEL_SIZE,
-        'RESNET_1_KERNEL_NUM': RESNET_1_KERNEL_NUM,
-        'RESNET_2_BLOCKS': RESNET_2_BLOCKS,
-        'RESNET_2_KERNEL_SIZE': RESNET_2_KERNEL_SIZE,
-        'RESNET_2_KERNEL_NUM': RESNET_2_KERNEL_NUM,
-        'DROPOUT': DROPOUT,
-        'EPOCHS': EPOCHS,
-        "LR": LR,
-        'BATCH': BATCH
-    }
-    sweep_config['method'] = 'random'
-    sweep_config['metric'] = {'name': 'loss', 'goal': 'minimize'}
-
-    sweep_config['name'] = f"BioEx4_{get_time()}"
-
-    for i in range(WANTED_M):
-        sweep_config[f"DILATION_{i}"] = DILATION[i]
+    sweep_config = {'RESNET_1_BLOCKS': RESNET_1_BLOCKS,
+                    'RESNET_1_KERNEL_SIZE': RESNET_1_KERNEL_SIZE,
+                    'RESNET_1_KERNEL_NUM': RESNET_1_KERNEL_NUM,
+                    'RESNET_2_BLOCKS': RESNET_2_BLOCKS,
+                    'RESNET_2_KERNEL_SIZE': RESNET_2_KERNEL_SIZE,
+                    'RESNET_2_KERNEL_NUM': RESNET_2_KERNEL_NUM,
+                    'DROPOUT': DROPOUT, 'EPOCHS': EPOCHS, "LR": LR,
+                    'DILATATION':DILATION,
+                    'BATCH': BATCH, 'method': 'random',
+                    'metric': {'name': 'loss', 'goal': 'minimize'},
+                    'name': f"BioEx4_{get_time()}"}
 
     return sweep_config
 
+class WandbCallback(tf.keras.callbacks.Callback):
+    def __init__(self, fold):
+        super(WandbCallback, self).__init__()
+        self.fold = fold
+        
+    def on_epoch_end(self, epoch, logs=None):
+        wandb.log({'loss':logs['loss'],'val_loss':logs['val_loss'],'fold':
+        self.fold,'epoch':epoch})
 
 def train(config=None):
     if config is None:
@@ -247,7 +245,8 @@ def train(config=None):
                                                             f"{fold_var}.ckpt",
                                                             monitor='val_loss',
                                                             save_best_only=True, mode='max')
-            callbacks_list = [checkpoint]
+
+            callbacks_list = [checkpoint,WandbCallback(fold_var)]
 
             # ________________________________________fitting the model_______________________________________
             history = model.fit(X_t, y_t,
@@ -256,7 +255,7 @@ def train(config=None):
                                 batch_size=config['BATCH'],
                                 validation_data=(X_v, y_v))
 
-            # TODO decide how we want to save model here
+
             # ________________________________________evaluate the model______________________________________
             best_model = tf.keras.models.load_model(f"{save_dir}"
                                                     f"{model_name}"
@@ -269,7 +268,7 @@ def train(config=None):
 
 
 def main():
-    sweep_id = wandb.sweep(get_config(), project="BioEx4_1",
+    sweep_id = wandb.sweep(get_config(), project="BioEx4_2",
                            entity="avishai-elma")
     wandb.agent(sweep_id, train, count=1000)
 
