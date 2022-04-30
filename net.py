@@ -58,7 +58,7 @@ RESNET_1_KERNEL_NUM = 64
 
 RESNET_2_BLOCKS = 1
 RESNET_2_KERNEL_SIZE = 1  # good start may be 3/5
-RESNET_2_KERNEL_NUM = 3
+RESNET_2_KERNEL_NUM = 3  # DO NOT MAKE IT 1!
 DILATION = [1]
 WANTED_M = 1  # len of DILATION to be randomize by 'wandb' tool
 
@@ -271,7 +271,7 @@ def train(config=None):
 def main():
     sweep_id = wandb.sweep(get_config(), project="BioEx4_1",
                            entity="avishai-elma")
-    wandb.agent(sweep_id, train, count=1)
+    wandb.agent(sweep_id, train, count=1000)
 
 
 if __name__ == '__main__':
