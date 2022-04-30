@@ -168,22 +168,24 @@ def plot_val_train_loss(history):
 
 def get_config():
     sweep_config = {}
-    sweep_config['method'] = 'random'
+    sweep_config['method'] = 'bayes'
     sweep_config['metric'] = {'name': 'loss', 'goal': 'minimize'}
 
     sweep_config['name'] = f"BioEx4_{get_time()}"
     param_dict = {
-        'RESNET_1_BLOCKS': {'distribution': 'int_uniform', 'min': 1, 'max': 10},
-        'RESNET_1_KERNEL_SIZE': {'distribution': 'int_uniform', 'min': 1, 'max': 10},
-        'RESNET_1_KERNEL_NUM': {'distribution': 'int_uniform', 'min': 5, 'max': 100},
-        'RESNET_2_BLOCKS': {'distribution': 'int_uniform', 'min': 1, 'max': 10},
-        'RESNET_2_KERNEL_SIZE': {'distribution': 'int_uniform', 'min': 1, 'max': 10},
-        'RESNET_2_KERNEL_NUM': {'distribution': 'int_uniform', 'min': 5, 'max': 100},
+        'RESNET_1_BLOCKS': {'distribution': 'int_uniform', 'min': 1, 'max': 5},
+        'RESNET_1_KERNEL_SIZE': {'values':[3,5,7,9]},
+        'RESNET_1_KERNEL_NUM': {'distribution': 'int_uniform', 'min': 8,
+                                'max': 64},
+        'RESNET_2_BLOCKS': {'distribution': 'int_uniform', 'min': 1, 'max': 5},
+        'RESNET_2_KERNEL_SIZE': {'values':[3,5,7,9]},
+        'RESNET_2_KERNEL_NUM': {'distribution': 'int_uniform', 'min': 8,
+                                'max': 64},
         'DROPOUT': {'distribution': 'uniform', 'min': 0.001, 'max': 0.5},
-        'EPOCHS': {'distribution': 'int_uniform', 'min': 2, 'max': 30},
+        'EPOCHS': {'distribution': 'int_uniform', 'min': 2, 'max': 10},
         "LR": {'distribution': 'uniform', 'min': 0.001, 'max': 0.05},
         'BATCH': {'values': [16, 32, 64, 128, 256]},
-        'DILATATION':{'values':[[1,2,4],[1],[1,2],[1,4],[1,2,4,8],[2,2,2]]}
+        'DILATATION':{'values':[[1,2,4],[1],[1,2],[1,4],[1,2,4,8]]}
     }
 
     sweep_config['parameters'] = param_dict
