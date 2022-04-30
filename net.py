@@ -256,8 +256,8 @@ def train(config=None):
                                 batch_size=config['BATCH'],
                                 validation_data=(X_v, y_v))
 
-            #TODO decide how we want to save model here
-
+            # TODO decide how we want to save model here
+            # ________________________________________evaluate the model______________________________________
             best_model = tf.keras.models.load_model(f"{save_dir}"
                                                     f"{model_name}"
                                                     f"{fold_var}.ckpt")
@@ -265,18 +265,18 @@ def train(config=None):
             fold_var += 1
             tf.keras.backend.clear_session()
 
-        wandb.log({'loss':np.mean(loss),"std":np.std(loss)})
+        wandb.log({'loss': np.mean(loss), "std": np.std(loss)})
 
 
 def main():
-    # sweep_id = wandb.sweep(get_config(), project="BioEx4",
-    #                        entity="avishai-elma")
-    # wandb.agent(sweep_id, train, count=1)
-    train()
+    sweep_id = wandb.sweep(get_config(), project="BioEx4_1",
+                           entity="avishai-elma")
+    wandb.agent(sweep_id, train, count=1)
 
 
 if __name__ == '__main__':
-    train()
+    main()
+    # train()
     # input_layer = tf.keras.Input(shape=(utils.NB_MAX_LENGTH, utils.FEATURE_NUM))
     #
     # # Conv1D -> shape = (NB_MAX_LENGTH, RESNET_1_KERNEL_NUM)
@@ -286,4 +286,3 @@ if __name__ == '__main__':
     #
     # model = tf.model(input_layer,dense)
     # my_optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
-
