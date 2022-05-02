@@ -187,7 +187,7 @@ def get_config():
         'RESNET_2_KERNEL_NUM': {'distribution': 'int_uniform', 'min': 8,
                                 'max': 64},
         'DROPOUT': {'distribution': 'uniform', 'min': 0.001, 'max': 0.5},
-        'EPOCHS': {'distribution': 'int_uniform', 'min': 2, 'max': 10},
+        'EPOCHS': {'distribution': 'int_uniform', 'min': 5, 'max': 15},
         "LR": {'distribution': 'uniform', 'min': 0.001, 'max': 0.05},
         'BATCH': {'values': [16, 32, 64, 128, 256]},
         'DILATATION':{'values':[[1,2,4],[1],[1,2],[1,4],[1,2,4,8]]}
