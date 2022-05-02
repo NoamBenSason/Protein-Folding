@@ -43,9 +43,9 @@ import utils
 
 
 # number of ResNet blocks for the first ResNet and the kernel size.
-RESNET_1_BLOCKS = 1
-RESNET_1_KERNEL_SIZE = 1
-RESNET_1_KERNEL_NUM = 39
+RESNET_1_BLOCKS = 2
+RESNET_1_KERNEL_SIZE = 3
+RESNET_1_KERNEL_NUM = 43
 
 ###############################################################################
 #                                                                             #
@@ -56,18 +56,18 @@ RESNET_1_KERNEL_NUM = 39
 
 # number of ResNet blocks for the second ResNet, dilation list to repeat and the kernel size.
 
-RESNET_2_BLOCKS = 1
-RESNET_2_KERNEL_SIZE = 2  # good start may be 3/5
-RESNET_2_KERNEL_NUM = 31  # DO NOT MAKE IT 1!
+RESNET_2_BLOCKS = 5
+RESNET_2_KERNEL_SIZE = 7  # good start may be 3/5
+RESNET_2_KERNEL_NUM = 53 # DO NOT MAKE IT 1!
 DILATION = [1]
 WANTED_M = len(DILATION) # len of DILATION to be randomize by 'wandb' tool
 
 # percentage of dropout for the dropout layer
-DROPOUT = 0.46363  # good start may be 0.1-0.5
+DROPOUT = 0.29715545068   # good start may be 0.1-0.5
 
 # number of epochs, Learning rate and Batch size
-EPOCHS = 7
-LR = 0.044244  # good start may be 0.0001/0.001/0.01
+EPOCHS = 10
+LR = 0.0051378873577  # good start may be 0.0001/0.001/0.01
 BATCH = 128  # good start may be 32/64/128
 
 
@@ -169,7 +169,12 @@ def plot_val_train_loss(history):
 def get_config():
     sweep_config = {}
     sweep_config['method'] = 'bayes'
-    sweep_config['metric'] = {'name': 'loss', 'goal': 'minimize'}
+    sweep_config['metric'] = {'name': 'best_val_loss', 'goal': 'minimize'}
+    sweep_config["early_terminate"]= {
+        "type": "hyperband",
+        "min_iter": 2,
+        "eta": 2,
+    }
 
     sweep_config['name'] = f"BioEx4_{get_time()}"
     param_dict = {
@@ -220,27 +225,27 @@ def train(config=None):
         config = get_default_config()
     with wandb.init(config=config) as run:
 
-        # __________________________________________loading the data__________________________________________
+        # _______________loading the data_______________
         config = wandb.config
         input = np.load("train_input.npy")  # numpy array of shape (1974,NB_MAX_LENGTH,FEATURE_NUM) - data
         labels = np.load("train_labels.npy")  # numpy array of shape (1974,NB_MAX_LENGTH,OUTPUT_SIZE) - labels
         save_dir = "BestFits/"
         model_name = run.name
         fold_var = 1
-        kf = KFold(n_splits=5,shuffle=True,random_state=0)
+        kf = KFold(n_splits=5, shuffle=True, random_state=0)
         my_optimizer = tf.keras.optimizers.Adam(learning_rate=config['LR'])
-        loss = np.zeros(5)
-
+        loss = 0
+        losses = np.zeros(5)
         for t_idx, v_idx in kf.split(input, labels):
             X_t, X_v = input[t_idx], input[v_idx]
             y_t, y_v = labels[t_idx], labels[v_idx]
 
             model = build_network(config)
-            # ____________________________________________compiling___________________________________________
+            # _______________compiling______________
 
             model.compile(optimizer=my_optimizer, loss='mean_squared_error')
 
-            # ________________________________________creating callbacks______________________________________
+            # _____________creating callbacks_____________
             checkpoint = tf.keras.callbacks.ModelCheckpoint(f"{save_dir}"
                                                             f"{model_name}"
                                                             f"{fold_var}.ckpt",
@@ -249,22 +254,27 @@ def train(config=None):
 
             callbacks_list = [checkpoint,WandbCallback(fold_var)]
 
-            # ________________________________________fitting the model_______________________________________
+            # _____________fitting the model______________
             history = model.fit(X_t, y_t,
                                 epochs=config['EPOCHS'],
                                 callbacks=callbacks_list,
                                 batch_size=config['BATCH'],
                                 validation_data=(X_v, y_v))
 
-            # ________________________________________evaluate the model______________________________________
+
+            # _____________evaluate the model_____________
             best_model = tf.keras.models.load_model(f"{save_dir}"
                                                     f"{model_name}"
                                                     f"{fold_var}.ckpt")
-            loss[fold_var - 1] = best_model.evaluate(X_v, y_v)
+
+            l = best_model.evaluate(X_v, y_v)
+            losses[fold_var - 1] = l
+            loss += l/5
+            wandb.log({'best_val_loss': loss})
+            # loss[fold_var - 1] = best_model.evaluate(X_v, y_v)
             fold_var += 1
             tf.keras.backend.clear_session()
-
-        wandb.log({'loss': np.mean(loss), "std": np.std(loss)})
+        wandb.log({'mean_loss': loss,'std':np.std(losses)})
 
 
 def main():
