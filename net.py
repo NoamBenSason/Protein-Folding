@@ -188,7 +188,7 @@ def get_config():
                                 'max': 64},
         'DROPOUT': {'distribution': 'uniform', 'min': 0.001, 'max': 0.5},
         'EPOCHS': {'distribution': 'int_uniform', 'min': 5, 'max': 15},
-        "LR": {'distribution': 'uniform', 'min': 0.001, 'max': 0.05},
+        "LR": {'distribution': 'uniform', 'min': 0.001, 'max': 0.025},
         'BATCH': {'values': [16, 32, 64, 128, 256]},
         'DILATATION':{'values':[[1,2,4],[1],[1,2],[1,4],[1,2,4,8]]}
     }
