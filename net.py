@@ -176,7 +176,7 @@ def plot_val_train_loss(history):
     axes.legend()
     axes.set_title("Train and Val MSE loss")
 
-    plt.savefig(f"/content/drive/MyDrive/ColabNotebooks/model_loss_history{get_time()}.png")  # TODO: you can change the path here
+    plt.savefig(f"/content/drive/MyDrive/ColabNotebooks/model_loss_history{get_time()}.png")
 
 
 # def get_config():

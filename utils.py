@@ -54,7 +54,7 @@ def get_seq_aa(pdb_file, chain_id):
 
     return seq, aa_residues
 
-def generate_input(pdb_file):  # TODO: implement this!
+def generate_input(pdb_file):
     """
     receives a pdb file and returns its sequence in a one-hot encoding matrix (each row is an aa in the sequence, and
     each column represents a different aa out of the 20 aa + 2 special columns).
@@ -73,9 +73,8 @@ def generate_input(pdb_file):  # TODO: implement this!
     matrix[ROW_IND, indices] = 1
     return matrix
 
-# print(generate_input("Ex4Data/1A0Q_1.pdb")[:10])
 
-def generate_label(pdb_file):  # TODO: implement this!
+def generate_label(pdb_file):
     """
     receives a pdb file and returns its backbone + CB coordinates.
     :param pdb_file: path to a pdb file (nanobody, heavy chain has id 'H') already alingned to a reference nanobody.
@@ -139,7 +138,7 @@ if __name__ == '__main__':
 
     input_matrix = []
     labels_matrix = []
-    data_path = "Ex4Data"  # TODO: change path if needed
+    data_path = "Ex4Data"
 
     for pdb in tqdm(os.listdir(data_path)):
         nb_one_hot = generate_input(os.path.join(data_path, pdb))
@@ -148,7 +147,7 @@ if __name__ == '__main__':
         input_matrix.append(nb_one_hot)
         labels_matrix.append(nb_xyz)
 
-    save_path = "Ex4Files"  # TODO: change path if needed
+    save_path = "Ex4Files"
 
     np.save(f"train_input.npy", np.array(input_matrix))
     np.save(f"train_labels.npy", np.array(labels_matrix))
