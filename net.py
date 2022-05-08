@@ -7,18 +7,11 @@ Original file is located at
     https://colab.research.google.com/drive/13oKE5ZEXudDDyWvoHd2Wc9u-asz-5QyR
 """
 
-!pip
-install
-Bio
-!pip
-install
-import
-
--ipynb
+# !pip install Bio
+# !pip install import-ipynb
 # !pip install wandb
 
 from google.colab import drive
-
 drive.mount('/content/drive')
 
 # Commented out IPython magic to ensure Python compatibility.
@@ -31,7 +24,7 @@ from sklearn.model_selection import KFold
 from datetime import datetime
 
 # so we can import utils notebook (delete if working on Pycharm), you might need to change it to your working directory path
-# %cd "/content/drive/MyDrive/ColabNotebooks"
+# %cd "/content/drive/MyDrive/ColabNotebooks_short"
 import import_ipynb
 import utils
 
@@ -58,21 +51,20 @@ RESNET_1_KERNEL_NUM = 16
 
 RESNET_2_BLOCKS = 5
 RESNET_2_KERNEL_SIZE = 5  # good start may be 3/5
-RESNET_2_KERNEL_NUM = 28  # DO NOT MAKE IT 1!
+RESNET_2_KERNEL_NUM = 28 # DO NOT MAKE IT 1!
 DILATION = [1]
-WANTED_M = len(DILATION)  # len of DILATION to be randomize by 'wandb' tool
+WANTED_M = len(DILATION) # len of DILATION to be randomize by 'wandb' tool
 
 # percentage of dropout for the dropout layer
-DROPOUT = 0.289580549283963  # good start may be 0.1-0.5
+DROPOUT = 0.289580549283963   # good start may be 0.1-0.5
 
 # number of epochs, Learning rate and Batch size
 EPOCHS = 9
-LR = 0.0019210418506367384  # good start may be 0.0001/0.001/0.01
+LR = 0.0019210418506367384 # good start may be 0.0001/0.001/0.01
 BATCH = 16  # good start may be 32/64/128
 
 save_dir = "BestFits/"
 model_name = "selected_model2_polar_5"
-
 
 def get_time():
     now = datetime.now()
@@ -119,24 +111,22 @@ def resnet_2(input_layer, block_num=RESNET_2_BLOCKS, kernel_size=RESNET_2_KERNEL
 
     return last_layer_output
 
-
 def get_default_config():
-    """
-    :return: a configuration with the default
-    """
-    sweep_config = {'RESNET_1_BLOCKS': RESNET_1_BLOCKS,
-                    'RESNET_1_KERNEL_SIZE': RESNET_1_KERNEL_SIZE,
-                    'RESNET_1_KERNEL_NUM': RESNET_1_KERNEL_NUM,
-                    'RESNET_2_BLOCKS': RESNET_2_BLOCKS,
-                    'RESNET_2_KERNEL_SIZE': RESNET_2_KERNEL_SIZE,
-                    'RESNET_2_KERNEL_NUM': RESNET_2_KERNEL_NUM,
-                    'DROPOUT': DROPOUT, 'EPOCHS': EPOCHS, "LR": LR,
-                    'DILATATION': DILATION, 'BATCH': BATCH, 'method': 'random',
-                    'metric': {'name': 'loss', 'goal': 'minimize'},
-                    'name': f"BioEx4_{get_time()}"}
+  """
+  :return: a configuration with the default 
+  """
+  sweep_config = {'RESNET_1_BLOCKS': RESNET_1_BLOCKS,
+                  'RESNET_1_KERNEL_SIZE': RESNET_1_KERNEL_SIZE,
+                  'RESNET_1_KERNEL_NUM': RESNET_1_KERNEL_NUM,
+                  'RESNET_2_BLOCKS': RESNET_2_BLOCKS,
+                  'RESNET_2_KERNEL_SIZE': RESNET_2_KERNEL_SIZE,
+                  'RESNET_2_KERNEL_NUM': RESNET_2_KERNEL_NUM,
+                  'DROPOUT': DROPOUT, 'EPOCHS': EPOCHS, "LR": LR,
+                  'DILATATION': DILATION, 'BATCH': BATCH, 'method': 'random',
+                  'metric': {'name': 'loss', 'goal': 'minimize'},
+                  'name': f"BioEx4_{get_time()}"}
 
-    return sweep_config
-
+  return sweep_config
 
 def build_network(config=None):
     """
@@ -186,8 +176,7 @@ def plot_val_train_loss(history):
     axes.legend()
     axes.set_title("Train and Val MSE loss")
 
-    plt.savefig(
-        f"/content/drive/MyDrive/ColabNotebooks/model_loss_history{get_time()}.png")  # TODO: you can change the path here
+    plt.savefig(f"/content/drive/MyDrive/ColabNotebooks/model_loss_history{get_time()}.png")  # TODO: you can change the path here
 
 
 # def get_config():
@@ -304,22 +293,26 @@ def train(config=None):
     history = model.fit(input, labels,
                         epochs=config['EPOCHS'],
                         batch_size=config['BATCH'],
-                        validation_split=0.07)
+                        validation_split = 0.07)
     plot_val_train_loss(history)
     tf.keras.models.save_model(model, save_dir + model_name)
     tf.keras.backend.clear_session()
 
-
 def part3():
-    model = tf.keras.models.load_model(save_dir + model_name)
-    input = utils.generate_input("6xw6/6xw6.pdb")
-    prediction = model.predict(input[None, :, :])
-    seq = "VQLQESGGGLVQAGDSLRVSCAASGRTISSSPMGWFRQAPGKEREFVAAISGNGGNTYYLDSVKGRFTTSRDNAKNTVYLQLNNLKPEDTAIYYCAARSRFSAMHLAYRRLVDYDDWGQGTQVTVS"
-    utils.matrix_to_pdb(seq, prediction[0, :, :], "prediction_6xw6_solar5")
+  model = tf.keras.models.load_model(save_dir + model_name)
+  input = utils.generate_input("6xw6/6xw6.pdb")
+  prediction = model.predict(input[None,:,:])
+  seq="VQLQESGGGLVQAGDSLRVSCAASGRTISSSPMGWFRQAPGKEREFVAAISGNGGNTYYLDSVKGRFTTSRDNAKNTVYLQLNNLKPEDTAIYYCAARSRFSAMHLAYRRLVDYDDWGQGTQVTVS"
+  utils.matrix_to_pdb(seq, prediction[0,:,:], "prediction_6xw6_solar5")
+
 
 
 def main():
-    # sweep_id = wandb.sweep(get_config(), project="BioEx4_5",
-    #                          entity="avishai-elma")
-    #   wandb.agent(sweep_id, models_selection, count=1000)
-    train()
+  # sweep_id = wandb.sweep(get_config(), project="BioEx4_5",
+  #                          entity="avishai-elma")
+  #   wandb.agent(sweep_id, models_selection, count=1000)
+  train()
+
+if __name__ == '__main__':
+  main()
+
