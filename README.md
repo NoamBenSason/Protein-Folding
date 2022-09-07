@@ -1,6 +1,6 @@
 # Protein-Folding
 
-net_wandb.ipynb - the model and its fitting, with a htper-parameters selection with the 'Weights and Biases' package
+net_wandb.ipynb - the model and its fitting, with a hyper-parameters selection using the 'Weights and Biases' package
 net.py - same as 'net_wandb.ipynb' in different format
 train_input.npy - training data
 train_labels.npy - trasining labels
